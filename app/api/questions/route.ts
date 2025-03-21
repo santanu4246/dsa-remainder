@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
-interface Question {
-  title: string;
-  titleSlug: string;
-  difficulty: string;
-  questionLink: string;
-}
+// interface Question {
+//   title: string;
+//   titleSlug: string;
+//   difficulty: string;
+//   questionLink: string;
+// }
 
 export async function POST(req: NextRequest) {
   try {

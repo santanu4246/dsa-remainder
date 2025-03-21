@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum to represent difficulty levels.
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+// The User model stores login information and user preferences.
+model User {
+  id         String    @id @default(uuid())
+  email      String    @unique
+  password   String
+  difficulty Difficulty
+  // Users can select multiple topics.
+  topics     Topic[]   @relation("UserTopics")
+  createdAt  DateTime  @default(now())
+
+  // NextAuth models (if you are using NextAuth for authentication).
+  sessions   Session[]
+  accounts   Account[]
+
+  // Log to track emails sent (stores the question link as a string).
+  emailLogs  EmailLog[]
+}
+
+// The Topic model represents various coding topics.
+model Topic {
+  id    String   @id @default(uuid())
+  name  String   @unique
+  users User[]   @relation("UserTopics")
+}
+
+// The EmailLog model tracks which question link was sent to which user and when.
+model EmailLog {
+  id           Int     @id @default(autoincrement())
+  user         User    @relation(fields: [userId], references: [id])
+  userId       String
+  // Store the question link sent via email.
+  questionLink String
+  sentAt       DateTime @default(now())
+}
+
+// Optional NextAuth models for handling sessions and external provider logins.
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  provider          String
+  providerAccountId String
+  access_token      String?
+  token_type        String?
+  expires_at        Int?
+  refresh_token     String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
