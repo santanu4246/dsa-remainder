@@ -133,15 +133,28 @@ export default function CodingProfileDashboard() {
     });
   };
 
+  const getLeetcodeData = async () => {
+    try {
+      const response = await axios.get(
+        `https://alfa-leetcode-api.onrender.com/santanu4246/solved`
+      );
+      console.log(response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching LeetCode data:", error);
+      return null;
+    }
+  };
   // Trigger getUser on component mount
   useEffect(() => {
     getUser();
+    getLeetcodeData();
   }, []);
 
   // Log the updated user state whenever it changes
-  useEffect(() => {
-    console.log(user); // Logs the updated state
-  }, [user]);
+  // useEffect(() => {
+  //   console.log(user); // Logs the updated state
+  // }, [user]);
 
   return (
     <div className="min-h-screen bg-black dark:bg-slate-950 p-4 md:p-8">
@@ -490,7 +503,7 @@ export default function CodingProfileDashboard() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950" >
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg font-semibold">
                   Customize Daily DSA
@@ -605,7 +618,7 @@ export default function CodingProfileDashboard() {
                     Your next question will be delivered to:
                   </p>
                   <p className="font-medium text-slate-900 dark:text-slate-100">
-                    john.doe@example.com
+                    {user?.email}
                   </p>
                 </div>
 
