@@ -16,33 +16,35 @@ enum Difficulty {
 
 // The User model stores login information and user preferences.
 model User {
-  id         String    @id @default(uuid())
-  email      String    @unique
-  password   String
-  difficulty Difficulty
+  id            String     @id @default(uuid())
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?  @map("email_verified")
+  difficulty    Difficulty @default(EASY)
+  image         String?
   // Users can select multiple topics.
-  topics     Topic[]   @relation("UserTopics")
-  createdAt  DateTime  @default(now())
+  topics        Topic[]    @relation("UserTopics")
+  createdAt     DateTime   @default(now())
 
   // NextAuth models (if you are using NextAuth for authentication).
-  sessions   Session[]
-  accounts   Account[]
+  // sessions Session[]
+  accounts Account[]
 
   // Log to track emails sent (stores the question link as a string).
-  emailLogs  EmailLog[]
+  emailLogs EmailLog[]
 }
 
 // The Topic model represents various coding topics.
 model Topic {
-  id    String   @id @default(uuid())
-  name  String   @unique
-  users User[]   @relation("UserTopics")
+  id    String @id @default(uuid())
+  name  String @unique
+  users User[] @relation("UserTopics")
 }
 
 // The EmailLog model tracks which question link was sent to which user and when.
 model EmailLog {
-  id           Int     @id @default(autoincrement())
-  user         User    @relation(fields: [userId], references: [id])
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
   userId       String
   // Store the question link sent via email.
   questionLink String
@@ -51,29 +53,31 @@ model EmailLog {
 
 // Optional NextAuth models for handling sessions and external provider logins.
 model Account {
-  id                String   @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
-  user              User     @relation(fields: [userId], references: [id])
+  type              String
   provider          String
   providerAccountId String
-  access_token      String?
-  token_type        String?
-  expires_at        Int?
   refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
   scope             String?
   id_token          String?
   session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  expires      DateTime
-}
+// model Session {
+//   id           String   @id @default(cuid())
+//   sessionToken String   @unique
+//   userId       String
+//   user         User     @relation(fields: [userId], references: [id])
+//   expires      DateTime
+// }
 
 model VerificationToken {
   identifier String
