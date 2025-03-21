@@ -122,7 +122,12 @@ export default function CodingProfileDashboard() {
     email: "",
     image: "",
   });
-
+  const [leetcodeData, setLeetcodeData] = useState({
+    total: 0,
+    easy: 0,
+    medium: 0,
+    hard: 0,
+  });
   const getUser = async () => {
     const session = await axios.get("/api/auth/session");
     console.log(session.data.user.name); // Logs the fetched name
@@ -136,8 +141,14 @@ export default function CodingProfileDashboard() {
   const getLeetcodeData = async () => {
     try {
       const response = await axios.get(
-        `https://alfa-leetcode-api.onrender.com/santanu4246/solved`
+        `https://alfa-leetcode-api.onrender.com/${leetcodeUsername}/solved`
       );
+      setLeetcodeData({
+        total: response.data.solvedProblem,
+        easy: response.data.easySolved,
+        medium: response.data.mediumSolved,
+        hard: response.data.hardSolved,
+      });
       console.log(response.data);
       return response.data;
     } catch (error) {
@@ -238,14 +249,14 @@ export default function CodingProfileDashboard() {
                     </p>
                     <BarChart3 className="h-4 w-4 text-blue-500" />
                   </div>
-                  <h3 className="text-2xl font-bold mt-2 text-slate-900 dark:text-slate-50">
-                    387{" "}
-                    <span className="text-slate-400 text-lg font-normal">
+                  <h3 className="text-2xl font-bold mt-2 text-slate-400 dark:text-slate-50">
+                    {leetcodeData.total}{" "}
+                    {/* <span className="text-slate-400 text-lg font-normal">
                       / 2500
-                    </span>
+                    </span> */}
                   </h3>
-                  <p className="text-sm text-slate-500 mt-1">15% completion</p>
-                  <Progress value={15} className="h-1.5 mt-3" />
+                  {/* <p className="text-sm text-slate-500 mt-1">15% completion</p>
+                  <Progress value={15} className="h-1.5 mt-3" /> */}
                 </CardContent>
               </Card>
 
@@ -292,7 +303,7 @@ export default function CodingProfileDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-green-500">Easy</p>
-                      <p className="text-sm font-medium">74/667</p>
+                      <p className="text-sm text-white font-medium">{leetcodeData.easy}</p>
                     </div>
                     <Progress
                       value={(74 / 667) * 100}
@@ -306,7 +317,7 @@ export default function CodingProfileDashboard() {
                       <p className="text-sm font-medium text-amber-500">
                         Medium
                       </p>
-                      <p className="text-sm font-medium">48/1813</p>
+                      <p className="text-sm text-white font-medium">{leetcodeData.medium}</p>
                     </div>
                     <Progress
                       value={(48 / 1813) * 100}
@@ -318,7 +329,7 @@ export default function CodingProfileDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-red-500">Hard</p>
-                      <p className="text-sm font-medium">2/811</p>
+                      <p className="text-sm text-white font-medium">{leetcodeData.hard}</p>
                     </div>
                     <Progress
                       value={(2 / 811) * 100}
