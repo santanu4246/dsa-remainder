@@ -25,8 +25,8 @@ function LoginContent() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 p-4">
       {/* Logo Section */}
       <div className="text-center space-y-4 mb-8">
-        <div className="inline-block border border-emerald-500/20 px-4 py-1.5 rounded-full text-sm bg-emerald-500/10 text-emerald-300 font-medium">
-          Welcome Back
+      <div className="inline-block border border-blue-500/20 px-4 py-1.5 rounded-full text-sm bg-blue-500/10 text-blue-300 font-medium">
+         Welcome Back
         </div>
         <h1 className="text-3xl myfont md:text-4xl font-bold text-white">
           Sign in to Dsa Remainder
@@ -74,11 +74,11 @@ function LoginContent() {
           <div className="mt-6 text-center">
             <p className="text-sm text-zinc-500">
               By signing in, you agree to our{" "}
-              <a href="#" className="text-emerald-500 hover:text-emerald-400">
+              <a href="#" className="text-blue-400 hover:text-blue-300">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a href="#" className="text-emerald-500 hover:text-emerald-400">
+              <a href="#" className="text-blue-400 hover:text-blue-300">
                 Privacy Policy
               </a>
             </p>
