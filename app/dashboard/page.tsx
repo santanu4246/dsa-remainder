@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
+
 import {
   Clock,
   BarChart3,
@@ -34,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import { signOut } from "next-auth/react";
+
 import { SignOutButton } from "@/components/auth/sign-out-button";
 // import { toast } from "@/components/ui/use-toast"
 
@@ -113,14 +113,14 @@ export default function CodingProfileDashboard() {
   };
 
   // Update preferences
-  const updatePreferences = () => {
-    console.log(selectedTopics, difficulty);
-    
-    // toast({
-    //   title: "Preferences Updated",
-    //   description: `Updated to ${selectedTopics.length} topics with ${difficulty} difficulty.`,
-    // })
-  };
+  // const updatePreferences = () => {
+  //   console.log(selectedTopics, difficulty);
+
+  //   // toast({
+  //   //   title: "Preferences Updated",
+  //   //   description: `Updated to ${selectedTopics.length} topics with ${difficulty} difficulty.`,
+  //   // })
+  // };
   const [user, setuser] = useState({
     name: "",
     email: "",
@@ -162,13 +162,10 @@ export default function CodingProfileDashboard() {
   };
   const getQuestions = async () => {
     try {
-      const response = await axios.post(
-        `http://localhost:3000/api/questions`,
-        {
-          topics: selectedTopics,
-          difficulty: difficulty,
-        }
-      );
+      const response = await axios.post(`http://localhost:3000/api/questions`, {
+        topics: selectedTopics,
+        difficulty: difficulty,
+      });
       console.log(response.data);
       return response.data;
     } catch (error) {

@@ -145,3 +145,27 @@
 .myfont2{
   font-family: "Bebas Neue";
 }
+/* For WebKit browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+  width: 12px;            /* Thickness of the scrollbar */
+  background-color: #000; /* Fallback if track color fails */
+}
+
+::-webkit-scrollbar-track {
+  background-color: #111; /* Dark background for the track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #444; /* Dark thumb color */
+  border-radius: 6px;     /* Rounded edges */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #666; /* Slightly lighter on hover */
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: thin;                   /* Thinner scrollbar */
+  scrollbar-color: #444 #111; /* thumb | track */
+}

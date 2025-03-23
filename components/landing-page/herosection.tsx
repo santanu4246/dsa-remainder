@@ -10,8 +10,8 @@ import Link from "next/link";
 
 import BlurIn from "../ui/blur-in";
 import AnimatedShinyText from "../ui/animated-shiny-text";
-import { Spotlight } from "../ui/spotlight";
-
+// import { Spotlight } from "../ui/spotlight";
+import { Spotlight } from "../ui/spotlight-new";
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Component() {
@@ -41,9 +41,10 @@ export default function Component() {
 
   return (
     <section
-      className={`relative w-full flex justify-center ${inter.className}`}
+      className={`relative w-full flex justify-center overflow-hidden h-screen ${inter.className}`}
     >
-      <Spotlight className="top-10 left-0 md:left-60 md:-top-20" fill="white" />
+      {/* <Spotlight className="top-10 left-0 md:left-60 md:-top-20" fill="white" /> */}
+      <Spotlight/>
       <motion.div
         ref={contentRef}
         className="container flex h-[60vh] md:min-h-[75vh] max-w-6xl flex-col items-center pt-32 px-4 text-center"
@@ -91,7 +92,7 @@ export default function Component() {
           variants={itemVariants}
           className="flex flex-wrap items-center justify-center gap-4"
         >
-          <Link href={"/preferences"}>
+          <Link href={"/login"}>
             <Button
               size="lg"
               className="h-12 rounded-lg bg-blue-500 px-8 text-base text-white hover:bg-blue-600"
