@@ -11,14 +11,15 @@ import axios from "axios";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { topic, difficulty } = body;
+    const { topics, difficulty } = body;
 
-    if (!topic || !difficulty) {
+    if (!topics || !difficulty) {
       return NextResponse.json({ error: "Topic and difficulty are required" }, { status: 400 });
     }
 
-    let url = topic
-      ? `https://alfa-leetcode-api.onrender.com/problems?tags=${topic}`
+    const topicsQuery = topics.join("+");
+    let url = topicsQuery
+      ? `https://alfa-leetcode-api.onrender.com/problems?tags=${topicsQuery}`
       : "https://leetcode-api-pied.vercel.app/problems";
 
     const { data } = await axios.get(url);

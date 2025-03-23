@@ -34,6 +34,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
+import { signOut } from "next-auth/react";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 // import { toast } from "@/components/ui/use-toast"
 
 // List of all DSA topics
@@ -112,6 +114,8 @@ export default function CodingProfileDashboard() {
 
   // Update preferences
   const updatePreferences = () => {
+    console.log(selectedTopics, difficulty);
+    
     // toast({
     //   title: "Preferences Updated",
     //   description: `Updated to ${selectedTopics.length} topics with ${difficulty} difficulty.`,
@@ -156,16 +160,34 @@ export default function CodingProfileDashboard() {
       return null;
     }
   };
+  const getQuestions = async () => {
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/api/questions`,
+        {
+          topics: selectedTopics,
+          difficulty: difficulty,
+        }
+      );
+      console.log(response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      return null;
+    }
+  };
   // Trigger getUser on component mount
   useEffect(() => {
-    getUser();
     getLeetcodeData();
+  }, []);
+  useEffect(() => {
+    getUser();
   }, []);
 
   // Log the updated user state whenever it changes
-  // useEffect(() => {
-  //   console.log(user); // Logs the updated state
-  // }, [user]);
+  useEffect(() => {
+    console.log(user); // Logs the updated state
+  }, []);
 
   return (
     <div className="min-h-screen bg-black dark:bg-slate-950 p-4 md:p-8">
@@ -176,13 +198,15 @@ export default function CodingProfileDashboard() {
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="relative">
                 <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-primary/10">
-                  <img
-                    src={user.image}
-                    alt="John Doe"
-                    width={80}
-                    height={80}
-                    className="object-cover"
-                  />
+                  {user.image && (
+                    <img
+                      src={user.image || ""}
+                      alt="John Doe"
+                      width={80}
+                      height={80}
+                      className="object-cover"
+                    />
+                  )}
                 </div>
                 <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-green-500 border-2 border-white dark:border-slate-900"></span>
               </div>
@@ -222,12 +246,7 @@ export default function CodingProfileDashboard() {
                     ? "Change LeetCode Username"
                     : "Add LeetCode Username"}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
-                >
-                  Remove
-                </Button>
+                <SignOutButton />
               </div>
             </div>
           </CardContent>
@@ -303,7 +322,9 @@ export default function CodingProfileDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-green-500">Easy</p>
-                      <p className="text-sm text-white font-medium">{leetcodeData.easy}</p>
+                      <p className="text-sm text-white font-medium">
+                        {leetcodeData.easy}
+                      </p>
                     </div>
                     <Progress
                       value={(74 / 667) * 100}
@@ -317,7 +338,9 @@ export default function CodingProfileDashboard() {
                       <p className="text-sm font-medium text-amber-500">
                         Medium
                       </p>
-                      <p className="text-sm text-white font-medium">{leetcodeData.medium}</p>
+                      <p className="text-sm text-white font-medium">
+                        {leetcodeData.medium}
+                      </p>
                     </div>
                     <Progress
                       value={(48 / 1813) * 100}
@@ -329,7 +352,9 @@ export default function CodingProfileDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-red-500">Hard</p>
-                      <p className="text-sm text-white font-medium">{leetcodeData.hard}</p>
+                      <p className="text-sm text-white font-medium">
+                        {leetcodeData.hard}
+                      </p>
                     </div>
                     <Progress
                       value={(2 / 811) * 100}
@@ -609,7 +634,7 @@ export default function CodingProfileDashboard() {
 
                 <Button
                   className="w-full mt-2"
-                  onClick={updatePreferences}
+                  onClick={getQuestions}
                   disabled={selectedTopics.length === 0}
                 >
                   Update Preferences
