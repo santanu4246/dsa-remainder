@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --animate-spotlight: spotlight 2s ease 0.75s 1 forwards;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -119,4 +120,28 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+@font-face {
+  font-family: "Bebas Neue";
+  src: url("../public/Satoshi-Bold.woff2");
+}
+.myfont{
+  font-family: "Bebas Neue";
+}
+@font-face {
+  font-family: "Bebas Neue";
+  src: url("../public/Satoshi-Medium.woff2");
+}
+.myfont2{
+  font-family: "Bebas Neue";
 }

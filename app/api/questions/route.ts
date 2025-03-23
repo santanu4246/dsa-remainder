@@ -19,22 +19,22 @@ export async function POST(req: NextRequest) {
 
     const topicsQuery = topics.join("+");
     let url = topicsQuery
-      ? `https://alfa-leetcode-api.onrender.com/problems?tags=${topicsQuery}`
+      ? `https://alfa-leetcode-api.onrender.com/problems?tags=${topicsQuery}&difficulty=${difficulty.toUpperCase()}`
       : "https://leetcode-api-pied.vercel.app/problems";
 
     const { data } = await axios.get(url);
     let questions = data.problemsetQuestionList || [];
 
-    if (difficulty) {
-      questions = questions.filter(
-        (q: any) => q.difficulty.toLowerCase() === difficulty.toLowerCase()
-      );
-    }
+    // if (difficulty) {
+    //   questions = questions.filter(
+    //     (q: any) => q.difficulty.toLowerCase() === difficulty.toLowerCase()
+    //   );
+    // }
 
-    questions = questions.map((q: any) => ({
-      title: q.title,
-      questionLink: `https://leetcode.com/problems/${q.titleSlug}/`,
-    }));
+    // questions = questions.map((q: any) => ({
+    //   title: q.title,
+    //   questionLink: `https://leetcode.com/problems/${q.titleSlug}/`,
+    // }));
 
     return NextResponse.json({ questions }, { status: 200 });
   } catch (error) {
