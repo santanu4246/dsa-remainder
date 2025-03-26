@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     // Just update the username directly and let the frontend handle validation
 
     // Update user's LeetCode username
-    const updatedUser = await db.user.update({
+    await db.user.update({
       where: { id: user.id },
       data: { leetcodeUsername: username }
     });
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
 }
 
 // Fetch LeetCode details directly
-export async function PUT(req: Request) {
+export async function PUT() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -145,8 +145,8 @@ export async function PUT(req: Request) {
         username: user.leetcodeUsername,
         data: userData
       });
-    } catch (apiError: any) {
-      console.error("Error fetching from LeetCode API:", apiError.message);
+    } catch (apiError) {
+      console.error("Error fetching from LeetCode API:", apiError instanceof Error ? apiError.message : apiError);
       return NextResponse.json({ 
         success: false, 
         error: "Failed to fetch LeetCode data. The API might be unavailable." 

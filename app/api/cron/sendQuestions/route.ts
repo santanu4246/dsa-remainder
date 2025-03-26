@@ -16,6 +16,18 @@ interface ErrorInfo {
   error: string;
 }
 
+// Define a type for successful results
+interface SuccessResult {
+  success: true;
+  emailLog: {
+    id: number;
+    userId: string;
+    questionLink: string;
+    sentAt: Date;
+  };
+  question: string;
+}
+
 export async function GET(request: Request) {
   try {
     // Verify this is a genuine cron request
@@ -35,7 +47,7 @@ export async function GET(request: Request) {
       }
     });
 
-    const results: any[] = [];
+    const results: SuccessResult[] = [];
     const errors: ErrorInfo[] = [];
 
     // Process each user in parallel
@@ -43,7 +55,7 @@ export async function GET(request: Request) {
       try {
         const result = await sendQuestionToUser(user.id);
         if (result.success) {
-          results.push(result);
+          results.push(result as SuccessResult);
         } else {
           errors.push({ 
             userId: user.id, 

@@ -1,65 +1,49 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/auth";
 import nodemailer from "nodemailer";
 
-export async function GET(request: Request) {
+export async function GET(_: Request) {
   try {
-    // Get the first user to test with
-    const user = await db.user.findFirst({
-      where: {
-        email: {
-          not: ""
-        }
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json({
-        success: false,
-        error: "No users found with an email address"
-      }, { status: 404 });
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Use a hardcoded question to bypass API rate limits
-    const question = {
+    // Create a sample question for the test email
+    const testQuestion = {
       title: "Two Sum",
-      titleSlug: "two-sum",
-      difficulty: "EASY"
+      difficulty: "EASY",
+      titleSlug: "two-sum"
     };
 
-    // Create the question link
-    const questionLink = `https://leetcode.com/problems/${question.titleSlug}/`;
-    
-    // Log the email to our database
-    const emailLog = await db.emailLog.create({
-      data: {
-        userId: user.id,
-        questionLink: questionLink
-      }
-    });
+    const questionLink = `https://leetcode.com/problems/${testQuestion.titleSlug}/`;
 
-    // Send direct email to the user
-    await sendDirectEmail(user.email, user.name || "Coding Enthusiast", question, questionLink);
+    // Send direct test email
+    try {
+      await sendDirectEmail(
+        session.user.email,
+        session.user.name || "Coding Enthusiast",
+        testQuestion,
+        questionLink
+      );
 
-    return NextResponse.json({
-      success: true,
-      message: `Test email sent successfully to ${user.email}`,
-      details: {
-        user: user.email,
-        question: question.title,
-        emailLog
-      }
-    });
+      return NextResponse.json({
+        success: true,
+        message: "Test email sent successfully"
+      });
+    } catch (error) {
+      return NextResponse.json({
+        success: false,
+        error: error instanceof Error ? error.message : "Email sending failed"
+      }, { status: 500 });
+    }
   } catch (error) {
-    console.error("Test email failed:", error);
+    console.error("Test email route error:", error);
     return NextResponse.json({ 
       success: false, 
-      error: error instanceof Error ? error.message : "Failed to send test email" 
+      error: error instanceof Error ? error.message : "Failed to process request" 
     }, { status: 500 });
   }
 }
@@ -68,7 +52,7 @@ export async function GET(request: Request) {
 async function sendDirectEmail(
   email: string,
   name: string,
-  question: any,
+  question: {title: string; difficulty: string; titleSlug: string},
   questionLink: string
 ) {
   const transporter = nodemailer.createTransport({

@@ -1,13 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 
-declare global {
-  var cachedPrisma: PrismaClient;
-}
+// Use a singleton pattern to prevent multiple Prisma instances
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting your database connection limit.
-export const db = globalThis.cachedPrisma || new PrismaClient();
+// Create a new PrismaClient if one doesn't exist in the global namespace
+const prisma = globalForPrisma.prisma || new PrismaClient();
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.cachedPrisma = db;
-} 
+// Only assign to global in development to prevent hot reload issues
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export const db = prisma; 

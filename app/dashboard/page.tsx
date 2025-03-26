@@ -8,7 +8,8 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import PreferencesForm from "./components/PreferencesForm";
 import QuestionsHistory from "./components/QuestionsHistory";
 import LeetCodeStats from "./components/LeetCodeStats";
-import { BookOpenIcon, TrendingUp, Calendar, Trophy, Zap } from "lucide-react";
+import { TrendingUp, Calendar, Trophy, Zap } from "lucide-react";
+import Image from "next/image";
 
 interface StreakData {
   currentStreak: number;
@@ -81,14 +82,6 @@ export default function CodingProfileDashboard() {
     const timeString = hours > 0 
       ? `${hours}h ${minutes}m` 
       : `${minutes}m ${seconds}s`;
-    
-    // Format the next question time
-    const formattedTime = nextQuestionTime.toLocaleString('en-US', {
-      weekday: 'short',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
     
     const nextQuestionTimeString = now.getDate() === nextQuestionTime.getDate()
       ? `Today at 8:00 AM`
@@ -173,10 +166,12 @@ export default function CodingProfileDashboard() {
               <div className="relative">
                 <div className="h-24 w-24 rounded-xl overflow-hidden border-4 border-zinc-800 shadow-xl bg-gradient-to-br from-zinc-800 to-zinc-900">
                   {user.image ? (
-                    <img
+                    <Image
                       src={user.image}
                       alt={user.name || "Profile"}
                       className="h-full w-full object-cover"
+                      width={96}
+                      height={96}
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">

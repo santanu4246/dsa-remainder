@@ -3,8 +3,22 @@ import nodemailer from "nodemailer";
 import axios from "axios";
 import { Difficulty } from "@prisma/client";
 
+// Define interfaces for LeetCode question data
+interface QuestionData {
+  title: string;
+  titleSlug: string;
+  difficulty: string;
+  [key: string]: unknown; // For other properties that might exist
+}
+
+// Define interface for cache entries
+interface CacheEntry {
+  timestamp: number;
+  data: QuestionData[];
+}
+
 // Cache for storing questions by topic and difficulty
-const questionsCache: Record<string, { timestamp: number, data: any[] }> = {};
+const questionsCache: Record<string, CacheEntry> = {};
 // Cache expiration: 24 hours in milliseconds
 const CACHE_EXPIRATION = 24 * 60 * 60 * 1000;
 
@@ -97,7 +111,7 @@ export async function sendQuestionToUser(userId: string) {
 }
 
 // Get questions with retry logic for handling rate limits
-async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, maxRetries = 3): Promise<any[]> {
+async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, maxRetries = 3): Promise<QuestionData[]> {
   const topicsQuery = topics.join("+");
   const cacheKey = `${topicsQuery}-${difficulty}`;
   
@@ -110,7 +124,7 @@ async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, m
   
   // Try to fetch from API with retry logic
   let retries = 0;
-  let lastError: any = null;
+  let lastError: Error | null = null;
   
   while (retries < maxRetries) {
     try {
@@ -121,7 +135,7 @@ async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, m
       }
       
       // Try to fetch data from alternate endpoints to distribute load
-      let data;
+      let data: QuestionData[] = [];
       try {
         // First try the problems endpoint
         const url = `https://alfa-leetcode-api.onrender.com/problems?tags=${topicsQuery}&difficulty=${difficulty}&limit=5`;
@@ -146,15 +160,13 @@ async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, m
       
       return data;
     } catch (error) {
-      lastError = error;
+      lastError = error instanceof Error ? error : new Error(String(error));
       retries++;
       
       // If it's not a rate limit error, don't retry
       if (axios.isAxiosError(error) && error.response?.status !== 429) {
         break;
       }
-      
-      console.log(`API request failed (attempt ${retries}/${maxRetries}): ${error.message}`);
     }
   }
   
@@ -169,10 +181,10 @@ async function getQuestionsWithRetry(topics: string[], difficulty: Difficulty, m
 }
 
 // Function to send a question email
-async function sendQuestionEmail(
+export async function sendQuestionEmail(
   email: string,
   name: string,
-  question: any,
+  question: QuestionData,
   questionLink: string
 ) {
   const transporter = nodemailer.createTransport({

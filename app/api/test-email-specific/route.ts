@@ -77,7 +77,7 @@ export async function GET(request: Request) {
 async function sendDirectEmail(
   email: string,
   name: string,
-  question: any,
+  question: {title: string; difficulty: string; titleSlug: string},
   questionLink: string
 ) {
   const transporter = nodemailer.createTransport({

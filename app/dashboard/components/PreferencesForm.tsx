@@ -100,11 +100,6 @@ export default function PreferencesForm() {
   // Update preferences
   const updatePreferences = async () => {
     if (selectedTopics.length === 0) {
-    //   toast({
-    //         title: "Error",
-    //         description: "Please select at least one topic",
-    //         variant: "destructive",
-    //     });
       setSaveMessage({
         type: "error",
         message: "Please select at least one topic"
@@ -114,15 +109,11 @@ export default function PreferencesForm() {
 
     setLoading(true);
     try {
-      const response = await axios.post("/api/user/preferences", {
+      await axios.post("/api/user/preferences", {
         topics: selectedTopics,
         difficulty
       });
 
-    //   toast({
-    //     title: "Preferences Updated",
-    //     description: `Updated to ${selectedTopics.length} topics with ${difficulty.toLowerCase()} difficulty.`,
-    //   });
       setSaveMessage({
         type: "success",
         message: `Updated to ${selectedTopics.length} topics with ${difficulty.toLowerCase()} difficulty`
@@ -134,11 +125,6 @@ export default function PreferencesForm() {
       }, 3000);
     } catch (error) {
       console.error("Error updating preferences:", error);
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to update preferences",
-    //     variant: "destructive",
-    //   });
       setSaveMessage({
         type: "error",
         message: "Failed to update preferences"
