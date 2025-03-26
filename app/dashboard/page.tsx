@@ -1,735 +1,344 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import {
-  Clock,
-  BarChart3,
-  Calendar,
-  CheckCircle2,
-  Trophy,
-  Target,
-} from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
-
 import { SignOutButton } from "@/components/auth/sign-out-button";
-// import { toast } from "@/components/ui/use-toast"
+import PreferencesForm from "./components/PreferencesForm";
+import QuestionsHistory from "./components/QuestionsHistory";
+import LeetCodeStats from "./components/LeetCodeStats";
+import { BookOpenIcon, TrendingUp, Calendar, Trophy, Zap } from "lucide-react";
 
-// List of all DSA topics
-const ALL_DSA_TOPICS = [
-  "Arrays",
-  "Strings",
-  "Dynamic Programming",
-  "Linked Lists",
-  "Trees",
-  "Graphs",
-  "Sorting",
-  "Searching",
-  "Recursion",
-  "Backtracking",
-  "Greedy Algorithms",
-  "Divide and Conquer",
-  "Hashing",
-  "Heaps",
-  "Stacks",
-  "Queues",
-  "Bit Manipulation",
-  "Math",
-  "Binary Search",
-  "Two Pointers",
-];
+interface StreakData {
+  currentStreak: number;
+  lastSubmission: string;
+}
+
+interface PracticeData {
+  rate: number;
+  total: number;
+  last30Days: number;
+}
+
+// New interface for time remaining
+interface TimeRemaining {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  timeString: string;
+  nextQuestionTime: string;
+}
 
 export default function CodingProfileDashboard() {
-  // State for username sheet
-  const [usernameSheetOpen, setUsernameSheetOpen] = useState(false);
-  const [leetcodeUsername, setLeetcodeUsername] = useState("Santanu4246");
-  const [newUsername, setNewUsername] = useState("");
-
-  // State for DSA topics
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([
-    "Arrays",
-    "Strings",
-    "Dynamic Programming",
-  ]);
-  const [difficulty, setDifficulty] = useState("medium");
-
-  // Handle username submission
-  const handleUsernameSubmit = () => {
-    if (newUsername.trim()) {
-      setLeetcodeUsername(newUsername.trim());
-      setUsernameSheetOpen(false);
-      // toast({
-      //   title: "Username Updated",
-      //   description: `Your LeetCode username has been updated to ${newUsername.trim()}.`,
-      // })
-    }
-  };
-
-  // Handle topic selection
-  const handleTopicChange = (topic: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTopics((prev) => [...prev, topic]);
-    } else {
-      setSelectedTopics((prev) => prev.filter((t) => t !== topic));
-    }
-  };
-
-  // Select all topics
-  const selectAllTopics = () => {
-    setSelectedTopics([...ALL_DSA_TOPICS]);
-  };
-
-  // Clear all topics
-  const clearAllTopics = () => {
-    setSelectedTopics([]);
-  };
-
-  // Remove a topic
-  const removeTopic = (topic: string) => {
-    setSelectedTopics((prev) => prev.filter((t) => t !== topic));
-  };
-
-  // Update preferences
-  // const updatePreferences = () => {
-  //   console.log(selectedTopics, difficulty);
-
-  //   // toast({
-  //   //   title: "Preferences Updated",
-  //   //   description: `Updated to ${selectedTopics.length} topics with ${difficulty} difficulty.`,
-  //   // })
-  // };
-  const [user, setuser] = useState({
+  const [user, setUser] = useState({
     name: "",
     email: "",
     image: "",
   });
-  const [leetcodeData, setLeetcodeData] = useState({
-    total: 0,
-    easy: 0,
-    medium: 0,
-    hard: 0,
+  const [leetcodeUsername, setLeetcodeUsername] = useState("");
+  const [streakData, setStreakData] = useState<StreakData>({
+    currentStreak: 0,
+    lastSubmission: "Never"
   });
-  const getUser = async () => {
-    const session = await axios.get("/api/auth/session");
-    console.log(session.data.user.name); // Logs the fetched name
-    setuser({
-      name: session.data.user.name,
-      email: session.data.user.email,
-      image: session.data.user.image,
+  const [practiceData, setPracticeData] = useState<PracticeData>({
+    rate: 0,
+    total: 0,
+    last30Days: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  // Add state for time remaining until next question
+  const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    timeString: "Calculating...",
+    nextQuestionTime: ""
+  });
+
+  // Function to calculate time remaining until next 8:00 AM
+  const calculateTimeRemaining = () => {
+    const now = new Date();
+    const nextQuestionTime = new Date(now);
+    
+    // Set time to 8:00 AM (08:00) today
+    nextQuestionTime.setHours(8, 0, 0, 0);
+    
+    // If it's already past 8:00 AM, set to 8:00 AM tomorrow
+    if (now >= nextQuestionTime) {
+      nextQuestionTime.setDate(nextQuestionTime.getDate() + 1);
+    }
+    
+    // Calculate time difference in milliseconds
+    const diff = nextQuestionTime.getTime() - now.getTime();
+    
+    // Convert to hours, minutes, seconds
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    // Format for display
+    const timeString = hours > 0 
+      ? `${hours}h ${minutes}m` 
+      : `${minutes}m ${seconds}s`;
+    
+    // Format the next question time
+    const formattedTime = nextQuestionTime.toLocaleString('en-US', {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
     });
+    
+    const nextQuestionTimeString = now.getDate() === nextQuestionTime.getDate()
+      ? `Today at 8:00 AM`
+      : `Tomorrow at 8:00 AM`;
+    
+    return {
+      hours,
+      minutes,
+      seconds,
+      timeString,
+      nextQuestionTime: nextQuestionTimeString
+    };
   };
 
-  const getLeetcodeData = async () => {
-    try {
-      const response = await axios.get(
-        `https://alfa-leetcode-api.onrender.com/${leetcodeUsername}/solved`
-      );
-      setLeetcodeData({
-        total: response.data.solvedProblem,
-        easy: response.data.easySolved,
-        medium: response.data.mediumSolved,
-        hard: response.data.hardSolved,
-      });
-      console.log(response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching LeetCode data:", error);
-      return null;
-    }
-  };
-  const getQuestions = async () => {
-    try {
-      const response = await axios.post(`http://localhost:3000/api/questions`, {
-        topics: selectedTopics,
-        difficulty: difficulty,
-      });
-      console.log(response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-      return null;
-    }
-  };
-  // Trigger getUser on component mount
   useEffect(() => {
-    getLeetcodeData();
-  }, []);
-  useEffect(() => {
-    getUser();
+    // Set up timer to update countdown every second
+    const timer = setInterval(() => {
+      setTimeRemaining(calculateTimeRemaining());
+    }, 1000);
+
+    // Fetch initial time
+    setTimeRemaining(calculateTimeRemaining());
+    
+    // Clean up timer on unmount
+    return () => clearInterval(timer);
   }, []);
 
-  // Log the updated user state whenever it changes
   useEffect(() => {
-    console.log(user); // Logs the updated state
+    const fetchUserData = async () => {
+      try {
+        // Fetch user data
+        const response = await axios.get("/api/user");
+        if (response.data) {
+          setUser({
+            name: response.data.name || "",
+            email: response.data.email || "",
+            image: response.data.image || ""
+          });
+        }
+
+        // Fetch leetcode username
+        const usernameResponse = await axios.get("/api/user/leetcode");
+        if (usernameResponse.data && usernameResponse.data.username) {
+          setLeetcodeUsername(usernameResponse.data.username);
+        }
+
+        // Fetch streak data
+        const streakResponse = await axios.get("/api/user/streak");
+        if (streakResponse.data) {
+          setStreakData({
+            currentStreak: streakResponse.data.currentStreak || 0,
+            lastSubmission: streakResponse.data.lastSubmission || "Never"
+          });
+        }
+
+        // Fetch practice data
+        const practiceResponse = await axios.get("/api/user/practice");
+        if (practiceResponse.data) {
+          setPracticeData({
+            rate: practiceResponse.data.rate || 0,
+            total: practiceResponse.data.total || 0,
+            last30Days: practiceResponse.data.last30Days || 0
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   return (
-    <div className="min-h-screen bg-black dark:bg-slate-950 p-4 md:p-8">
+    <div className="min-h-screen  bg-black p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Profile Header */}
-        <Card className="border-0 shadow-md bg-gradient-to-br from-zinc-900 to-zinc-950 dark:bg-slate-900">
-          <CardContent className="p-6">
+        <Card className=" shadow-lg bg-gradient-to-r border-2 border-zinc-800/50 from-zinc-900 to-black overflow-hidden">
+          <CardContent className="p-6 relative z-10">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="relative">
-                <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-primary/10">
-                  {user.image && (
+                <div className="h-24 w-24 rounded-xl overflow-hidden border-4 border-zinc-800 shadow-xl bg-gradient-to-br from-zinc-800 to-zinc-900">
+                  {user.image ? (
                     <img
-                      src={user.image || ""}
-                      alt="John Doe"
-                      width={80}
-                      height={80}
-                      className="object-cover"
+                      src={user.image}
+                      alt={user.name || "Profile"}
+                      className="h-full w-full object-cover"
                     />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <span className="text-2xl font-bold text-white">
+                        {user.name?.charAt(0) || "?"}
+                      </span>
+                    </div>
                   )}
                 </div>
-                <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-green-500 border-2 border-white dark:border-slate-900"></span>
               </div>
-
-              <div className="space-y-1.5">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-                  {user.name}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-white">
+                  {user.name || "Loading..."}
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400">
-                  {user.email}
-                </p>
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1.5 px-2.5 py-1"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                    <span className="font-medium">42 days streak</span>
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="flex items-center gap-1.5 px-2.5 py-1"
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Joined Apr 2023</span>
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="ml-auto hidden md:flex gap-3">
-                <Button
+                <p className="text-zinc-400">{user.email || "Loading..."}</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                {/* <Button
                   variant="outline"
-                  className="border-primary text-primary hover:bg-primary/10"
-                  onClick={() => setUsernameSheetOpen(true)}
+                    size="sm" 
+                    className="bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
                 >
-                  {leetcodeUsername
-                    ? "Change LeetCode Username"
-                    : "Add LeetCode Username"}
-                </Button>
+                    <BookOpenIcon className="mr-2 h-4 w-4" />
+                    View Profile
+                </Button> */}
                 <SignOutButton />
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Stats Section */}
-          <div className="md:col-span-2 space-y-6 ">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
-              Performance Overview
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 ">
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950 ">
-                <CardContent className="p-6 flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Problems Solved
-                    </p>
-                    <BarChart3 className="h-4 w-4 text-blue-500" />
                   </div>
-                  <h3 className="text-2xl font-bold mt-2 text-slate-400 dark:text-slate-50">
-                    {leetcodeData.total}{" "}
-                    {/* <span className="text-slate-400 text-lg font-normal">
-                      / 2500
-                    </span> */}
-                  </h3>
-                  {/* <p className="text-sm text-slate-500 mt-1">15% completion</p>
-                  <Progress value={15} className="h-1.5 mt-3" /> */}
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950">
-                <CardContent className="p-6 flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Global Ranking
-                    </p>
-                    <Trophy className="h-4 w-4 text-amber-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold mt-2 text-slate-900 dark:text-slate-50">
-                    #45,872
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">Top 10%</p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950">
-                <CardContent className="p-6 flex flex-col">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                      Contest Rating
-                    </p>
-                    <Target className="h-4 w-4 text-purple-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold mt-2 text-slate-900 dark:text-slate-50">
-                    1725
-                  </h3>
-                  <p className="text-sm text-green-500 font-medium mt-1">
-                    Top 25%
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Daily Streak */}
+          <Card className=" bg-gradient-to-br from-blue-950 to-zinc-900 shadow-lg overflow-hidden border border-blue-900/20">
               <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">
-                  Difficulty Breakdown
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-green-500">Easy</p>
-                      <p className="text-sm text-white font-medium">
-                        {leetcodeData.easy}
-                      </p>
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-md bg-blue-900/30 flex items-center justify-center">
+                  <Zap className="h-6 w-6 text-blue-400" />
                     </div>
-                    <Progress
-                      value={(74 / 667) * 100}
-                      className="h-2 bg-slate-100 dark:bg-slate-800"
-                      indicatorClassName="bg-green-500"
-                    />
+                <div>
+                  <p className="text-blue-400/70 text-sm font-medium">Daily Streak</p>
+                  {isLoading ? (
+                    <div className="animate-pulse mt-1">
+                      <div className="h-8 w-16 bg-blue-900/30 rounded"></div>
+                      <div className="h-3 w-24 bg-blue-900/20 rounded mt-2"></div>
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-amber-500">
-                        Medium
+                  ) : (
+                    <>
+                      <h3 className="text-3xl font-bold text-blue-300 mt-1">{streakData.currentStreak}</h3>
+                      <p className="text-xs text-blue-500/60 mt-1">
+                        Last submission: {streakData.lastSubmission}
                       </p>
-                      <p className="text-sm text-white font-medium">
-                        {leetcodeData.medium}
-                      </p>
-                    </div>
-                    <Progress
-                      value={(48 / 1813) * 100}
-                      className="h-2 bg-slate-100 dark:bg-slate-800"
-                      indicatorClassName="bg-amber-500"
-                    />
+                    </>
+                  )}
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-red-500">Hard</p>
-                      <p className="text-sm text-white font-medium">
-                        {leetcodeData.hard}
-                      </p>
-                    </div>
-                    <Progress
-                      value={(2 / 811) * 100}
-                      className="h-2 bg-slate-100 dark:bg-slate-800"
-                      indicatorClassName="bg-red-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                  <p className="text-sm text-slate-500">
-                    LeetCode Username:{" "}
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      {leetcodeUsername || "Not set"}
-                    </span>
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => setUsernameSheetOpen(true)}
-                  >
-                    {leetcodeUsername ? "Edit Username" : "Add Username"}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50 mb-4">
-                Recently Solved Questions
-              </h2>
-              <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                        <th className="text-xs font-medium text-slate-500 text-left px-6 py-3">
-                          PROBLEM
-                        </th>
-                        <th className="text-xs font-medium text-slate-500 text-left px-6 py-3">
-                          DIFFICULTY
-                        </th>
-                        <th className="text-xs font-medium text-slate-500 text-left px-6 py-3">
-                          TOPIC
-                        </th>
-                        <th className="text-xs font-medium text-slate-500 text-left px-6 py-3">
-                          DATE SOLVED
-                        </th>
-                        <th className="text-xs font-medium text-slate-500 text-left px-6 py-3">
-                          TIME SPENT
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              Two Sum
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            variant="outline"
-                            className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900"
-                          >
-                            Easy
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Arrays
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Jun 15, 2023
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>15m</span>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              Add Two Numbers
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900"
-                          >
-                            Medium
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Linked Lists
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Jun 14, 2023
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>25m</span>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              Median of Two Sorted Arrays
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            variant="outline"
-                            className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900"
-                          >
-                            Hard
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Arrays
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Jun 13, 2023
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>40m</span>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              Longest Palindromic Substring
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900"
-                          >
-                            Medium
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Strings
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
-                          Jun 12, 2023
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>30m</span>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+          {/* Practice Rate */}
+          <Card className=" bg-gradient-to-br from-green-950 to-zinc-900 shadow-lg overflow-hidden border border-green-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-md bg-green-900/30 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-green-400" />
                 </div>
-              </Card>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-zinc-900 to-zinc-950">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">
-                  Customize Daily DSA
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Select DSA Topics
-                    </label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs text-primary"
-                        onClick={selectAllTopics}
-                      >
-                        Select All
-                      </Button>
-                      {selectedTopics.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 text-xs text-red-500"
-                          onClick={clearAllTopics}
-                        >
-                          Clear
-                        </Button>
+            <div>
+                  <p className="text-green-400/70 text-sm font-medium">Practice Rate</p>
+                  {isLoading ? (
+                    <div className="animate-pulse mt-1">
+                      <div className="h-8 w-16 bg-green-900/30 rounded"></div>
+                      <div className="h-3 w-24 bg-green-900/20 rounded mt-2"></div>
+                          </div>
+                  ) : (
+                    <>
+                      <h3 className="text-3xl font-bold text-green-300 mt-1">{practiceData.rate}%</h3>
+                      <p className="text-xs text-green-500/60 mt-1">
+                        {practiceData.last30Days} submissions in 30 days
+                      </p>
+                    </>
                       )}
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 border rounded-md p-2">
-                    {ALL_DSA_TOPICS.map((topic) => (
-                      <div key={topic} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`topic-${topic}`}
-                          checked={selectedTopics.includes(topic)}
-                          onChange={(e) =>
-                            handleTopicChange(topic, e.target.checked)
-                          }
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label
-                          htmlFor={`topic-${topic}`}
-                          className="text-sm text-slate-700 dark:text-slate-300"
-                        >
-                          {topic}
-                        </label>
-                      </div>
-                    ))}
+            </CardContent>
+          </Card>
+          
+          {/* Next Question */}
+          <Card className=" bg-gradient-to-br from-purple-950 to-zinc-900 shadow-lg overflow-hidden border border-purple-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-md bg-purple-900/30 flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-purple-400/70 text-sm font-medium">Next Question</p>
+                  <h3 className="text-3xl font-bold text-purple-300 mt-1">{timeRemaining.timeString}</h3>
+                  <p className="text-xs text-purple-500/60 mt-1">{timeRemaining.nextQuestionTime}</p>
+                </div>
                   </div>
-                </div>
+              </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Select Difficulty
-                  </label>
-                  <Select value={difficulty} onValueChange={setDifficulty}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
+          {/* LeetCode User */}
+          <Card className=" bg-gradient-to-br from-amber-950 to-zinc-900 shadow-lg overflow-hidden border border-amber-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-md bg-amber-900/30 flex items-center justify-center">
+                  <Trophy className="h-6 w-6 text-amber-400" />
                 </div>
-
-                {selectedTopics.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {selectedTopics.map((topic) => (
-                      <Badge
-                        key={topic}
-                        variant="secondary"
-                        className="px-3 py-1.5 flex items-center gap-1"
+                <div>
+                  <p className="text-amber-400/70 text-sm font-medium">LeetCode Profile</p>
+                  <h3 className="text-lg font-bold text-amber-300 mt-1 line-clamp-1">
+                    {leetcodeUsername || "Not connected"}
+                  </h3>
+                  {leetcodeUsername ? (
+                    <p className="text-xs text-amber-500/60 mt-1">
+                      {practiceData.total > 0 ? `${practiceData.total} total submissions` : "Profile connected"}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-500/60 mt-1">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0 h-auto text-amber-400 hover:text-amber-300"
+                        onClick={() => document.getElementById('leetcode-stats')?.scrollIntoView({ behavior: 'smooth' })}
                       >
-                        {topic}
-                        <button
-                          onClick={() => removeTopic(topic)}
-                          className="h-4 w-4 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <Button
-                  className="w-full mt-2"
-                  onClick={getQuestions}
-                  disabled={selectedTopics.length === 0}
-                >
-                  Update Preferences
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold text-blue-800 dark:text-blue-300">
-                  Next DSA Question
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Your next question will be delivered to:
-                  </p>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">
-                    {user?.email}
-                  </p>
+                        Connect your profile
+                      </Button>
+                    </p>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span>Tomorrow at 9:00 AM</span>
-                </div>
-
-                <div className="pt-2 border-t border-blue-100 dark:border-blue-900/50 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Topic:
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-100/50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800"
-                    >
-                      Dynamic Programming
-                    </Badge>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Difficulty:
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900"
-                    >
-                      Medium
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
           </div>
+
+        {/* Main Dashboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* LeetCode Stats */}
+          <div className="lg:col-span-6" id="leetcode-stats">
+            <LeetCodeStats />
+          </div>
+
+          {/* Question History */}
+          <div className="lg:col-span-6">
+            <QuestionsHistory />
+          </div>
+
+          {/* Preferences Form */}
+          <div className="lg:col-span-12">
+            <PreferencesForm />
         </div>
       </div>
 
-      {/* LeetCode Username Sheet */}
-      <Sheet open={usernameSheetOpen} onOpenChange={setUsernameSheetOpen}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>LeetCode Username</SheetTitle>
-            <SheetDescription>
-              Enter your LeetCode username to sync your progress and stats.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="py-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="leetcode-username">Username</Label>
-                <Input
-                  id="leetcode-username"
-                  placeholder="Enter your LeetCode username"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                />
-              </div>
-              <div className="text-sm text-slate-500">
-                Your LeetCode username will be used to fetch your latest stats
-                and progress.
+        {/* Footer */}
+        <div className="text-center mt-8 pb-6">
+          <p className="text-sm text-zinc-500">
+            Powered by LeetCode API. Stay consistent and improve your DSA skills!
+          </p>
               </div>
             </div>
-          </div>
-          <SheetFooter>
-            <SheetClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </SheetClose>
-            <Button
-              onClick={handleUsernameSubmit}
-              disabled={!newUsername.trim()}
-            >
-              Save Username
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
