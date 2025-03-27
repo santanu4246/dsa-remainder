@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendQuestionToUser } from "@/lib/scheduledEmails";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/auth";
 
 // This cron job runs daily at 8:00 AM (08:00)
 export const config = {
@@ -30,17 +32,19 @@ interface SuccessResult {
 
 export async function GET(request: Request) {
   try {
-    // Verify this is a genuine cron request
+    // Check if this is a cron request or manual trigger
     const authHeader = request.headers.get("Authorization");
+    const isCronRequest = authHeader === `Bearer ${process.env.CRON_SECRET_KEY}`;
     
-    if (
-      authHeader !== `Bearer ${process.env.CRON_SECRET_KEY}` && 
-      process.env.NODE_ENV === "production"
-    ) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    // If it's not a cron request, check for user authentication
+    if (!isCronRequest) {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
     }
 
-    // Get all users with their preferences - removed email verification requirement
+    // Get all users with their preferences
     const users = await db.user.findMany({
       select: {
         id: true
@@ -57,10 +61,15 @@ export async function GET(request: Request) {
         if (result.success) {
           results.push(result as SuccessResult);
         } else {
-          errors.push({ 
-            userId: user.id, 
-            error: result.error || "Unknown error" 
-          });
+          // Don't consider "already sent" as an error
+          if (result.alreadySent) {
+            console.log(`Already sent to user ${user.id} today`);
+          } else {
+            errors.push({ 
+              userId: user.id, 
+              error: result.error || "Unknown error" 
+            });
+          }
         }
         return result;
       } catch (error) {
