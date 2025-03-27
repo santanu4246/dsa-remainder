@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/auth";
 import nodemailer from "nodemailer";
 
-export async function GET(_: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
