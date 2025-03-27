@@ -172,6 +172,8 @@ export default function CodingProfileDashboard() {
                       className="h-full w-full object-cover"
                       width={96}
                       height={96}
+                      priority
+                      unoptimized
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
