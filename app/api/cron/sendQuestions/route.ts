@@ -4,12 +4,12 @@ import { sendQuestionToUser } from "@/lib/scheduledEmails";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/auth";
 
-// This cron job runs daily at 8:00 AM (08:00)
+// This cron job runs daily at 9:00 PM (21:00)
 export const config = {
   runtime: "edge",
   // For testing you might use "* * * * *" (every minute)
-  // In production, use "0 8 * * *" (8:00 AM daily)
-  schedule: "0 8 * * *",
+  // In production, use "0 21 * * *" (9:00 PM daily)
+  schedule: "0 21 * * *",
   regions: ["iad1"], // Choose your regions
 };
 

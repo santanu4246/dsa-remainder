@@ -187,16 +187,28 @@ export async function sendQuestionEmail(
   question: QuestionData,
   questionLink: string
 ) {
+  if (!process.env.nodemailer_user || !process.env.nodemailer_pass) {
+    throw new Error("Email configuration is missing. Please check your environment variables.");
+  }
+
   const transporter = nodemailer.createTransport({
-    service: 'gmail',  // Using Gmail SMTP service
+    service: 'gmail',
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,  // Use SSL
+    secure: true,
     auth: {
       user: process.env.nodemailer_user,
       pass: process.env.nodemailer_pass
     }
   });
+
+  // Verify transporter configuration
+  try {
+    await transporter.verify();
+  } catch (error) {
+    console.error("Email configuration error:", error);
+    throw new Error("Failed to verify email configuration. Please check your credentials.");
+  }
 
   const difficultyColor = 
     question.difficulty === 'EASY' ? 'green' : 
@@ -222,8 +234,9 @@ export async function sendQuestionEmail(
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Email sent successfully to ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${email}`, info.messageId);
+    return true;
   } catch (error) {
     console.error(`Failed to send email to ${email}:`, error);
     throw error;
