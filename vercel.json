@@ -1,6 +1,6 @@
 {
-    "crons": [{
-      "path": "/api/cron/sendQuestions",
-      "schedule": "30 12 * * *"
-    }]
+    "github": {
+      "silent": true
+    },
+    "version": 2
   }

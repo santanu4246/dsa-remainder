@@ -2,14 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendQuestionToUser } from "@/lib/scheduledEmails";
 
-// This cron job runs daily at 12:25 PM
-export const config = {
-  runtime: "edge",
-  // For testing you might use "* * * * *" (every minute)
-  // In production, use "25 12 * * *" (12:25 PM daily)
-  schedule: "30 12 * * *",
-  regions: ["iad1"], // Choose your regions
-};
+// This is a manual trigger endpoint for sending daily questions at 1:00 PM
+// Since Vercel Free plan doesn't support cron jobs
 
 interface ErrorInfo {
   userId: string;
@@ -31,7 +25,16 @@ interface SuccessResult {
 export async function GET() {
   try {
     // Log the request for debugging
-    console.log("Cron job triggered at:", new Date().toISOString());
+    console.log("Email sending triggered at:", new Date().toISOString());
+
+    // Check if nodemailer configurations exist
+    if (!process.env.nodemailer_user || !process.env.nodemailer_pass) {
+      console.error("Email credentials not found in environment variables!");
+      return NextResponse.json({ 
+        success: false, 
+        error: "Email configuration missing" 
+      }, { status: 500 });
+    }
 
     // Get all users who have set preferences
     const users = await db.user.findMany({
@@ -53,8 +56,8 @@ export async function GET() {
     const results: SuccessResult[] = [];
     const errors: ErrorInfo[] = [];
 
-    // Process all users in parallel for faster execution
-    const sendPromises = users.map(async (user) => {
+    // Process users one by one to avoid rate limits
+    for (const user of users) {
       try {
         console.log(`Processing user: ${user.email}`);
         
@@ -73,7 +76,7 @@ export async function GET() {
         
         if (existingEmail) {
           console.log(`Already sent to user ${user.email} today`);
-          return;
+          continue;
         }
 
         const result = await sendQuestionToUser(user.id);
@@ -90,15 +93,15 @@ export async function GET() {
             });
           }
         }
+        
+        // Add a small delay between emails to avoid Gmail sending limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error processing user ${user.email}:`, errorMessage);
         errors.push({ userId: user.id, error: errorMessage });
       }
-    });
-
-    // Wait for all emails to be sent
-    await Promise.all(sendPromises);
+    }
     
     const response = {
       success: true,
@@ -109,13 +112,13 @@ export async function GET() {
       timestamp: new Date().toISOString()
     };
 
-    console.log("Cron job completed:", response);
+    console.log("Email sending completed:", response);
     return NextResponse.json(response);
   } catch (error) {
-    console.error("Cron job failed:", error);
+    console.error("Email sending failed:", error);
     return NextResponse.json({ 
       success: false, 
-      error: error instanceof Error ? error.message : "Failed to execute cron job",
+      error: error instanceof Error ? error.message : "Failed to send emails",
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
