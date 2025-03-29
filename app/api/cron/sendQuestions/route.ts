@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendQuestionToUser } from "@/lib/scheduledEmails";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/auth";
 
-// This cron job runs daily at 12:00 PM (noon)
+// This cron job runs daily at 12:25 PM
 export const config = {
   runtime: "edge",
   // For testing you might use "* * * * *" (every minute)
-  // In production, use "0 12 * * *" (12:00 PM daily)
-  schedule: "0 12 * * *",
+  // In production, use "25 12 * * *" (12:25 PM daily)
+  schedule: "25 12 * * *",
   regions: ["iad1"], // Choose your regions
 };
 
@@ -32,24 +30,17 @@ interface SuccessResult {
 
 export async function GET(request: Request) {
   try {
-    // Check if this is a cron request or manual trigger
-    const authHeader = request.headers.get("Authorization");
-    const isCronRequest = authHeader === `Bearer ${process.env.CRON_SECRET_KEY}`;
-    
-    // If it's not a cron request, check for user authentication
-    if (!isCronRequest) {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.email) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-      }
-    }
-
     // Log the request for debugging
     console.log("Cron job triggered at:", new Date().toISOString());
-    console.log("Is cron request:", isCronRequest);
 
-    // Get all users with their preferences
+    // Get all users who have set preferences
     const users = await db.user.findMany({
+      where: {
+        // Only get users who have selected topics
+        topics: {
+          some: {} // This ensures the user has at least one topic
+        }
+      },
       select: {
         id: true,
         email: true,
@@ -57,24 +48,41 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`Found ${users.length} users to process`);
+    console.log(`Found ${users.length} users with preferences to process`);
 
     const results: SuccessResult[] = [];
     const errors: ErrorInfo[] = [];
 
-    // Process each user in parallel
+    // Process all users in parallel for faster execution
     const sendPromises = users.map(async (user) => {
       try {
         console.log(`Processing user: ${user.email}`);
+        
+        // Check if user already received a question today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const existingEmail = await db.emailLog.findFirst({
+          where: {
+            userId: user.id,
+            sentAt: {
+              gte: today
+            }
+          }
+        });
+        
+        if (existingEmail) {
+          console.log(`Already sent to user ${user.email} today`);
+          return;
+        }
+
         const result = await sendQuestionToUser(user.id);
+        
         if (result.success) {
           console.log(`Successfully sent to: ${user.email}`);
           results.push(result as SuccessResult);
         } else {
-          // Don't consider "already sent" as an error
-          if (result.alreadySent) {
-            console.log(`Already sent to user ${user.email} today`);
-          } else {
+          if (!result.alreadySent) {
             console.error(`Failed to send to ${user.email}:`, result.error);
             errors.push({ 
               userId: user.id, 
@@ -82,15 +90,14 @@ export async function GET(request: Request) {
             });
           }
         }
-        return result;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error processing user ${user.email}:`, errorMessage);
         errors.push({ userId: user.id, error: errorMessage });
-        return { success: false, error: errorMessage };
       }
     });
 
+    // Wait for all emails to be sent
     await Promise.all(sendPromises);
     
     const response = {
