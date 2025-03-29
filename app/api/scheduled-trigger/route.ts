@@ -9,7 +9,7 @@ export async function GET() {
   try {
     // Log trigger time for debugging
     const now = new Date();
-    console.log(`🔔 Scheduled trigger received at: ${now.toISOString()}`);
+    console.log(`🔔 Daily email (1:30 PM) trigger received at: ${now.toISOString()}`);
     
     // Check if nodemailer configurations exist
     if (!process.env.nodemailer_user || !process.env.nodemailer_pass) {

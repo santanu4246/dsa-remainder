@@ -57,15 +57,15 @@ export default function CodingProfileDashboard() {
     nextQuestionTime: ""
   });
 
-  // Function to calculate time remaining until next 1:15 PM
+  // Function to calculate time remaining until next 1:30 PM
   const calculateTimeRemaining = () => {
     const now = new Date();
     const nextQuestionTime = new Date(now);
     
-    // Set time to 1:15 PM today
-    nextQuestionTime.setHours(13, 15, 0, 0);
+    // Set time to 1:30 PM today
+    nextQuestionTime.setHours(13, 30, 0, 0);
     
-    // If it's already past 1:15 PM, set to 1:15 PM tomorrow
+    // If it's already past 1:30 PM, set to 1:30 PM tomorrow
     if (now >= nextQuestionTime) {
       nextQuestionTime.setDate(nextQuestionTime.getDate() + 1);
     }
@@ -84,8 +84,8 @@ export default function CodingProfileDashboard() {
       : `${minutes}m ${seconds}s`;
     
     const nextQuestionTimeString = now.getDate() === nextQuestionTime.getDate()
-      ? `Today at 1:15 PM`
-      : `Tomorrow at 1:15 PM`;
+      ? `Today at 1:30 PM`
+      : `Tomorrow at 1:30 PM`;
     
     return {
       hours,
