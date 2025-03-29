@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendQuestionToUser } from "@/lib/scheduledEmails";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/auth";
 
-// This endpoint can be triggered by external cron services like cron-job.org
-// It will always attempt to send emails when called
+// This endpoint forces sending emails to all users with preferences
+// Even if they already received an email today
+// Useful for testing and manual trigger
 
 export async function GET() {
   try {
-    // Log trigger time for debugging
-    const now = new Date();
-    console.log(`🔔 Scheduled trigger received at: ${now.toISOString()}`);
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Log trigger for debugging
+    console.log(`🔨 Force send trigger received at: ${new Date().toISOString()}`);
+    console.log(`🔨 Triggered by: ${session.user.email}`);
     
     // Check if nodemailer configurations exist
     if (!process.env.nodemailer_user || !process.env.nodemailer_pass) {
@@ -40,16 +49,19 @@ export async function GET() {
     const results = [];
     const errors = [];
 
-    // Process users one by one to avoid rate limits
+    // Process users one by one
     for (const user of users) {
       try {
         console.log(`📧 Processing user: ${user.email}`);
         
-        // Check if user already received a question today
+        // Don't check for existing emails since this is a force send
+        console.log(`🚀 Force sending email to ${user.email}...`);
+        
+        // First delete any existing email logs for today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        const existingEmail = await db.emailLog.findFirst({
+        await db.emailLog.deleteMany({
           where: {
             userId: user.id,
             sentAt: {
@@ -58,12 +70,7 @@ export async function GET() {
           }
         });
         
-        if (existingEmail) {
-          console.log(`⏭️ Already sent to user ${user.email} today, skipping`);
-          continue;
-        }
-
-        console.log(`🚀 Attempting to send email to ${user.email}...`);
+        // Now send the email
         const result = await sendQuestionToUser(user.id);
         
         if (result.success) {
@@ -73,13 +80,11 @@ export async function GET() {
             question: result.question
           });
         } else {
-          if (!result.alreadySent) {
-            console.error(`❌ Failed to send to ${user.email}:`, result.error);
-            errors.push({ 
-              email: user.email,
-              error: result.error || "Unknown error" 
-            });
-          }
+          console.error(`❌ Failed to send to ${user.email}:`, result.error);
+          errors.push({ 
+            email: user.email,
+            error: result.error || "Unknown error" 
+          });
         }
         
         // Add a small delay between emails to avoid Gmail sending limits
@@ -96,18 +101,18 @@ export async function GET() {
     
     const response = {
       success: true,
-      message: `Processed ${users.length} users - ${results.length} successful, ${errors.length} failed`,
+      message: `Force processed ${users.length} users - ${results.length} successful, ${errors.length} failed`,
       successCount: results.length,
       errorCount: errors.length,
       results: results,
       errors: errors.length > 0 ? errors : undefined,
-      timestamp: now.toISOString()
+      timestamp: new Date().toISOString()
     };
 
-    console.log("📊 Email sending completed:", response);
+    console.log("📊 Force email sending completed:", response);
     return NextResponse.json(response);
   } catch (error) {
-    console.error("💥 Email sending failed:", error);
+    console.error("💥 Force email sending failed:", error);
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Failed to send emails",
