@@ -28,7 +28,7 @@ interface SuccessResult {
   question: string;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // Log the request for debugging
     console.log("Cron job triggered at:", new Date().toISOString());
