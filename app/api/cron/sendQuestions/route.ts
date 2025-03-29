@@ -7,7 +7,7 @@ export const config = {
   runtime: "edge",
   // For testing you might use "* * * * *" (every minute)
   // In production, use "25 12 * * *" (12:25 PM daily)
-  schedule: "25 12 * * *",
+  schedule: "30 12 * * *",
   regions: ["iad1"], // Choose your regions
 };
 
