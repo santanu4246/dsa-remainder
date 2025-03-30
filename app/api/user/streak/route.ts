@@ -42,9 +42,6 @@ export async function GET() {
         
         if (calendarResponse.data) {
           const totalSolved = calendarResponse.data.totalSolved;
-          const easySolved = calendarResponse.data.easySolved;
-          const mediumSolved = calendarResponse.data.mediumSolved;
-          const hardSolved = calendarResponse.data.hardSolved;
           
           // If we have submission data, consider it as today's submission
           if (totalSolved > 0) {

@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DSA Remainder
 
-## Getting Started
+A Next.js application that helps you maintain your daily DSA (Data Structures and Algorithms) practice streak by sending you personalized LeetCode problems and tracking your progress.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 🔐 Google Authentication
+- 📊 LeetCode Progress Tracking
+- 🔥 Daily Streak Counter
+- 📈 Practice Rate Analytics
+- 📧 Daily Problem Reminders
+- 🎯 Personalized Problem Selection
+- 🌙 Dark Mode UI
+
+## Tech Stack
+
+- **Framework**: Next.js 14 with App Router
+- **Authentication**: NextAuth.js
+- **Database**: Prisma with PostgreSQL
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Email Service**: Nodemailer
+- **Deployment**: Vercel
+
+## Prerequisites
+
+- Node.js 18.x or later
+- pnpm (recommended) or npm
+- PostgreSQL database
+- Gmail account for sending emails
+- LeetCode account
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/dsa_remainder"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# Email
+NODEMAILER_USER="your-gmail-address"
+NODEMAILER_PASS="your-gmail-app-password"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/dsa-remainder.git
+   cd dsa-remainder
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-## Learn More
+3. Set up the database:
+   ```bash
+   pnpm prisma generate
+   pnpm prisma db push
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. Start the development server:
+   ```bash
+   pnpm dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Usage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Sign in with your Google account
+2. Set up your LeetCode username in your profile
+3. Configure your practice preferences:
+   - Select topics you want to practice
+   - Choose difficulty level
+   - Set preferred practice time
+4. Receive daily problem reminders
+5. Track your progress on the dashboard
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/api/user` - Get user profile
+- `/api/user/leetcode` - Get/Update LeetCode username
+- `/api/user/streak` - Get current streak
+- `/api/user/practice` - Get practice statistics
+- `/api/scheduledQuestions` - Get scheduled questions
+- `/api/cron/sendQuestions` - Send daily questions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [LeetCode](https://leetcode.com/) for their problem database
+- [Next.js](https://nextjs.org/) for the amazing framework
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful components
+- [Tailwind CSS](https://tailwindcss.com/) for the styling system
