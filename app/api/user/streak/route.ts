@@ -31,12 +31,29 @@ export async function GET() {
       try {
         // Fetch calendar data from LeetCode API
         const calendarResponse = await axios.get(
-          `https://alfa-leetcode-api.onrender.com/${user.leetcodeUsername}`
+          `https://leetcode-stats-api.herokuapp.com/${user.leetcodeUsername}`
         );
         
-        if (calendarResponse.data && calendarResponse.data.submissionCalendar) {
-          const calendarData = calendarResponse.data.submissionCalendar;
-          streakData = calculateStreak(calendarData);
+        console.log("LeetCode API Response:", {
+          username: user.leetcodeUsername,
+          hasData: !!calendarResponse.data,
+          submissionData: calendarResponse.data
+        });
+        
+        if (calendarResponse.data) {
+          const totalSolved = calendarResponse.data.totalSolved;
+          const easySolved = calendarResponse.data.easySolved;
+          const mediumSolved = calendarResponse.data.mediumSolved;
+          const hardSolved = calendarResponse.data.hardSolved;
+          
+          // If we have submission data, consider it as today's submission
+          if (totalSolved > 0) {
+            const today = new Date();
+            const submissionCalendar = {
+              [Math.floor(today.getTime() / 1000)]: totalSolved
+            };
+            streakData = calculateStreak(submissionCalendar);
+          }
         }
       } catch (error) {
         console.error("Error fetching LeetCode calendar data:", error);
@@ -52,17 +69,22 @@ export async function GET() {
 
 // Calculate streak from calendar data
 function calculateStreak(calendarData: Record<string, number>) {
+  // Get current date in UTC
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
+  
+  console.log("Today (UTC):", today.toISOString());
   
   // Convert timestamps to dates and sort them
   const submissionDates = Object.keys(calendarData)
     .map(timestamp => {
       const date = new Date(parseInt(timestamp) * 1000);
-      date.setHours(0, 0, 0, 0);
+      date.setUTCHours(0, 0, 0, 0);
       return date.getTime();
     })
     .sort((a, b) => b - a); // Sort in descending order (newest first)
+  
+  console.log("Submission Dates:", submissionDates.map(t => new Date(t).toISOString()));
   
   if (submissionDates.length === 0) {
     return {
@@ -77,9 +99,15 @@ function calculateStreak(calendarData: Record<string, number>) {
     day: "numeric"
   });
   
-  // Check if the last submission was today or yesterday
+  // Check if the last submission was today or yesterday (in UTC)
   const oneDayMs = 24 * 60 * 60 * 1000;
   const diffDays = Math.floor((today.getTime() - lastSubmissionDate.getTime()) / oneDayMs);
+  
+  console.log("Last Submission:", {
+    date: lastSubmissionDate.toISOString(),
+    diffDays,
+    oneDayMs
+  });
   
   // If last submission was more than a day ago, streak is broken
   if (diffDays > 1) {
@@ -95,7 +123,15 @@ function calculateStreak(calendarData: Record<string, number>) {
   
   for (let i = 1; i < submissionDates.length; i++) {
     const submissionDate = new Date(submissionDates[i]);
+    submissionDate.setUTCHours(0, 0, 0, 0);
     const diffFromCurrent = Math.floor((currentDate.getTime() - submissionDate.getTime()) / oneDayMs);
+    
+    console.log("Streak Calculation:", {
+      currentDate: currentDate.toISOString(),
+      submissionDate: submissionDate.toISOString(),
+      diffFromCurrent,
+      currentStreak
+    });
     
     if (diffFromCurrent === 0) {
       currentStreak++;
@@ -114,16 +150,16 @@ function calculateStreak(calendarData: Record<string, number>) {
   };
 }
 
-// Get yesterday's date
+// Get yesterday's date in UTC
 function yesterday(date: Date) {
   const result = new Date(date);
-  result.setDate(result.getDate() - 1);
+  result.setUTCDate(result.getUTCDate() - 1);
   return result;
 }
 
-// Get two days ago date
+// Get two days ago date in UTC
 function twoDaysAgo(date: Date) {
   const result = new Date(date);
-  result.setDate(result.getDate() - 2);
+  result.setUTCDate(result.getUTCDate() - 2);
   return result;
 } 

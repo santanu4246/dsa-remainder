@@ -26,13 +26,13 @@ function LoginContent() {
       {/* Logo Section */}
       <div className="text-center space-y-4 mb-8">
       <div className="inline-block border border-blue-500/20 px-4 py-1.5 rounded-full text-sm bg-blue-500/10 text-blue-300 font-medium">
-         Welcome Back
+         Welcome to DSA Learning
         </div>
         <h1 className="text-3xl myfont md:text-4xl font-bold text-white">
-          Sign in to Dsa Remainder
+          Sign in to DSA Remainder
         </h1>
         <p className="text-zinc-400 max-w-sm mx-auto myfont2">
-          Join thousands of quiz enthusiasts and start your journey today
+          Track your DSA learning progress and get timely reminders for practice
         </p>
       </div>
 
